@@ -27,6 +27,108 @@ class AlienInvasion:
     
         self.aliens = pygame.sprite.Group() # Cria um grupo para armazenar os alienígenas presentes no jogo
     
+    def _check_events(self):
+         """Responde a eventos de pressionamento de teclas e mouse"""
+         for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    self._handle_keydown(event)
+                elif event.type == pygame.KEYUP:
+                    self._handle_keyup(event)
+
+    def _handle_keydown(self, event: pygame.event.Event) -> None:
+        """Responde a pressionamentos de teclas."""
+        if event.key == pygame.K_RIGHT:
+            self.ship.moving_right = True
+        elif event.key == pygame.K_LEFT:
+            self.ship.moving_left = True
+        elif event.key == pygame.K_SPACE:
+            self._fire_bullet()
+
+    def _handle_keyup(self, event: pygame.event.Event) -> None:
+        """Responde a solturas de teclas."""
+        if event.key == pygame.K_RIGHT:
+            self.ship.moving_right = False
+        elif event.key == pygame.K_LEFT:
+            self.ship.moving_left = False
+
+    def _fire_bullet(self) -> None:
+        """Dispara um projétil, se o limite de projéteis na tela não for excedido."""
+        if len(self.bullets) < self.settings.bullet_allowed:
+            new_bullet = Bullet(self.screen, self.settings, self.ship)
+            self.bullets.add(new_bullet)
+
+    def _update_bullets(self) -> None:
+        """Atualiza a posição dos projéteis e se livra dos projéteis antigos."""
+        self.bullets.update()
+        self._remove_offscreen_bullets()
+        self._check_bullet_alien_collisions()
+
+    def _remove_offscreen_bullets(self) -> None:
+        """Remove os projéteis que saíram da tela."""
+        for bullet in self.bullets.copy():
+            if bullet.rect.bottom <= 0:
+                self.bullets.remove(bullet)
+
+    def _check_bullet_alien_collisions(self) -> None:
+        """Verifica se algum projétil atingiu um alienígena e remove ambos."""
+        pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
+
+    def _update_aliens(self) -> None:
+        self._check_fleet_edges()
+        self.aliens.update()
+
+    def _check_fleet_edges(self) -> None:
+        """Responde apropriadamente se algum alienígena atingiu a borda da tela."""
+        for alien in self.aliens.sprites():
+            if alien.check_edges():
+                self._change_fleet_direction()
+                break
+
+    def _change_fleet_direction(self) -> None:
+        """Desce a frota e muda sua direção."""
+        for alien in self.aliens.sprites():
+            alien.rect.y += self.settings.fleet_drop_speed
+        self.settings.fleet_direction *= -1
+
+    def _check_ship_collisions(self) -> None:
+        """Responde a colisões entre a nave e os alienígenas."""
+        if pygame.sprite.spritecollideany(self.ship, self.aliens):
+            print("A nave foi atingida!")
+            sys.exit()
+
+    def _render_screen(self) -> None:
+        """Redesenha a tela a cada passagem pelo laço."""
+        self.screen.fill(self.bg_color)
+        self.ship.blitme()
+        self.aliens.draw(self.screen)
+        self._draw_bullets()
+        pygame.display.flip()
+
+    def _draw_bullets(self) -> None:
+        """Desenha todos os projéteis na tela."""
+        for bullet in self.bullets.sprites():
+            bullet.draw_bullet()
+
+    def _update_game_state(self) -> None:
+        """Atualiza a posição da nave, projéteis e alienígenas."""
+        self.ship.update()
+        self._update_bullets()
+        self._update_aliens()
+        self._check_ship_collisions()
+
+        def create_fleet(self):
+        """Cria uma frota de alienígenas."""
+        # Cria um alienígena e calcula o número de alienígenas em uma linha
+        # O espaçamento entre os alienígenas é igual a um alienígena
+        alien = Alien(self.screen, self.settings)
+        alien_width = alien.rect.width
+        alien_height = alien.rect.height
+        available_space_x = self.settings.screen_width - (2 * alien_width)
+        number_aliens_x = available_space_x // (2 * alien_width)
+        self.ship_height = self.ship.rect.height
+
     
     def create_fleet(self):
         """Cria uma frota de alienígenas."""
